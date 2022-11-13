@@ -9,9 +9,12 @@ import (
 	"os"
 	"strconv"
 
-	ping "github.com/NaddiNadja/peer-to-peer/grpc"
+	ping "github.com/mbjnitu/peer-to-peer/grpc"
 	"google.golang.org/grpc"
 )
+
+var f *os.File
+var fileerr error
 
 func main() {
 	arg1, _ := strconv.ParseInt(os.Args[1], 10, 32)
@@ -25,6 +28,12 @@ func main() {
 		lamport: 0,
 		clients: make(map[int32]ping.PingClient),
 		ctx:     ctx,
+	}
+
+	//Create log.txt if not there
+	f, fileerr = os.OpenFile("Log.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	if fileerr != nil {
+		fmt.Println("Error creating log.txt")
 	}
 
 	// Create listener tcp on port ownPort
@@ -77,8 +86,8 @@ func (p *peer) Ping(ctx context.Context, req *ping.Request) (*ping.Reply, error)
 	message := req.Message
 	recievedLamport := req.Lamport
 
-	fmt.Printf("I: %v, has a lamport of %v, i received: %v\n", p.id, p.lamport, recievedLamport)
-
+	fmt.Printf("%v: has a lamport of %v, it received: %v\n", p.id, p.lamport, recievedLamport)
+	f.WriteString(fmt.Sprintf("%v: has a lamport of %v, it received: %v\n", p.id, p.lamport, recievedLamport))
 	p.lamport = ping.SyncLamport(p.lamport, recievedLamport)
 	p.lamport = ping.IncrementLamport(p.lamport) //Receiving a message will increase the Lamport time
 
@@ -91,7 +100,8 @@ func (p *peer) sendPingToAll() {
 	for id, client := range p.clients {
 		p.lamport = ping.IncrementLamport(p.lamport) //Sending a message will increase the Lamport time
 		request := &ping.Request{Message: "hello", Lamport: p.lamport}
-		fmt.Printf("I %v, send a message with lamport: %v\n", p.id, p.lamport)
+		fmt.Printf("%v: send a message with lamport: %v\n", p.id, p.lamport)
+		f.WriteString(fmt.Sprintf("%v: send a message with lamport: %v\n", p.id, p.lamport))
 
 		reply, err := client.Ping(p.ctx, request)
 		p.lamport = ping.SyncLamport(p.lamport, reply.Lamport) //Receiving a response, that might have a higher Lamport, therefor lets sync.
@@ -100,6 +110,7 @@ func (p *peer) sendPingToAll() {
 			fmt.Println("something went wrong")
 		}
 
-		fmt.Printf("Got reply from id: %v... %v, %v\n", id, reply.Message, reply.Lamport)
+		fmt.Printf("%v: Got reply from id: %v... %v, %v\n", p.id, id, reply.Message, reply.Lamport)
+		f.WriteString(fmt.Sprintf("%v: Got reply from id: %v... %v, %v\n", p.id, id, reply.Message, reply.Lamport))
 	}
 }
