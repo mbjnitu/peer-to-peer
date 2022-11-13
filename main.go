@@ -5,9 +5,11 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math/rand"
 	"net"
 	"os"
 	"strconv"
+	"time"
 
 	ping "github.com/mbjnitu/peer-to-peer/grpc"
 	"google.golang.org/grpc"
@@ -28,6 +30,7 @@ func main() {
 		lamport: 0,
 		clients: make(map[int32]ping.PingClient),
 		ctx:     ctx,
+		state:   "none",
 	}
 
 	//Create log.txt if not there
@@ -74,7 +77,7 @@ func main() {
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
-		p.sendPingToAll()
+		p.sendPingToAll(scanner.Text())
 	}
 }
 
@@ -84,28 +87,52 @@ type peer struct {
 	lamport int32
 	clients map[int32]ping.PingClient
 	ctx     context.Context
+	state   string
 }
 
 func (p *peer) Ping(ctx context.Context, req *ping.Request) (*ping.Reply, error) {
 	message := req.Message
 	recievedLamport := req.Lamport
+	var recievedId int32 = 0
+	var response string = "yes"
 
-	fmt.Printf("%v: has a lamport of %v, it received: %v\n", p.id, p.lamport, recievedLamport)
-	logFile.WriteString(fmt.Sprintf("%v: has a lamport of %v, it received: %v\n", p.id, p.lamport, recievedLamport))
+	fmt.Printf("%v: has a lamport of %v, it received: %v (%v)\n", p.id, p.lamport, message, recievedLamport)
+	logFile.WriteString(fmt.Sprintf("%v: has a lamport of %v, it received: %v (%v)\n", p.id, p.lamport, message, recievedLamport))
+
+	if message == "may i enter" {
+		// Do i want to enter aswell?
+		random := rand.Intn(100)
+		rand.NewSource(time.Now().UnixNano())
+		if p.state == "in" { //Im aleready using the critical section, like wtf are you thinking?..
+			response = "no"
+		} else if random > 65 {
+			if (p.lamport < req.Lamport) || (p.lamport == req.Lamport && p.id > recievedId) {
+				response = "no"
+				go p.waitAndRequest()
+			}
+		}
+	}
+
 	p.lamport = ping.SyncLamport(p.lamport, recievedLamport)
 	p.lamport = ping.IncrementLamport(p.lamport) //Receiving a message will increase the Lamport time
 
-	rep := &ping.Reply{Message: message, Lamport: p.lamport}
+	rep := &ping.Reply{Message: response, Lamport: p.lamport}
 
 	return rep, nil
 }
 
-func (p *peer) sendPingToAll() {
+func (p *peer) waitAndRequest() {
+	time.Sleep(2000 * time.Millisecond) // Since i also wanted to enter the critical section, and my lamport/id-combo was superior, ill now make a request myself.
+	p.sendPingToAll("may i enter")
+}
+
+func (p *peer) sendPingToAll(message string) {
+	amountOfYes := 0
 	for id, client := range p.clients {
 		p.lamport = ping.IncrementLamport(p.lamport) //Sending a message will increase the Lamport time
-		request := &ping.Request{Message: "hello", Lamport: p.lamport}
-		fmt.Printf("%v: send a message with lamport: %v\n", p.id, p.lamport)
-		logFile.WriteString(fmt.Sprintf("%v: send a message with lamport: %v\n", p.id, p.lamport))
+		request := &ping.Request{Message: message, Lamport: p.lamport}
+		fmt.Printf("%v: send message '%v' with lamport: %v\n", p.id, message, p.lamport)
+		logFile.WriteString(fmt.Sprintf("%v: send message '%v' with lamport: %v\n", p.id, message, p.lamport))
 
 		reply, err := client.Ping(p.ctx, request)
 		p.lamport = ping.SyncLamport(p.lamport, reply.Lamport) //Receiving a response, that might have a higher Lamport, therefor lets sync.
@@ -114,7 +141,23 @@ func (p *peer) sendPingToAll() {
 			fmt.Println("something went wrong")
 		}
 
+		if reply.Message == "yes" {
+			amountOfYes++
+		}
+
 		fmt.Printf("%v: Got reply from id: %v... %v, %v\n", p.id, id, reply.Message, reply.Lamport)
 		logFile.WriteString(fmt.Sprintf("%v: Got reply from id: %v... %v, %v\n", p.id, id, reply.Message, reply.Lamport))
 	}
+
+	if amountOfYes == (3)-1 {
+		p.writeInCriticalSection()
+	}
+}
+
+func (p *peer) writeInCriticalSection() {
+	p.state = "in"
+	CRITICAL_FILE.WriteString(fmt.Sprintf("%v: Accessed the Critical section. Lamport: %v\n", p.id, p.lamport))
+	logFile.WriteString(fmt.Sprintf("%v: Accessed the Critical section. Lamport: %v\n", p.id, p.lamport))
+	time.Sleep(8000 * time.Millisecond)
+	p.state = "none"
 }

@@ -1,0 +1,32 @@
+5000: send message 'may i enter' with lamport: 1
+5001: has a lamport of 0, it received: may i enter (1)
+5000: Got reply from id: 5001... no, 2
+5000: send message 'may i enter' with lamport: 3
+5002: has a lamport of 0, it received: may i enter (3)
+5000: Got reply from id: 5002... no, 4
+5002: send message 'may i enter' with lamport: 5
+5001: send message 'may i enter' with lamport: 3
+5000: has a lamport of 4, it received: may i enter (5)
+5000: has a lamport of 6, it received: may i enter (3)
+5002: Got reply from id: 5000... no, 6
+5001: Got reply from id: 5000... yes, 7
+5002: send message 'may i enter' with lamport: 7
+5001: send message 'may i enter' with lamport: 8
+5001: has a lamport of 8, it received: may i enter (7)
+5002: has a lamport of 7, it received: may i enter (8)
+5002: Got reply from id: 5001... yes, 9
+5001: Got reply from id: 5002... no, 9
+5000: send message 'may i enter' with lamport: 8
+5002: send message 'may i enter' with lamport: 10
+5001: has a lamport of 9, it received: may i enter (8)
+5001: has a lamport of 10, it received: may i enter (10)
+5000: Got reply from id: 5001... yes, 10
+5000: send message 'may i enter' with lamport: 11
+5002: Got reply from id: 5001... yes, 11
+5002: send message 'may i enter' with lamport: 12
+5002: has a lamport of 12, it received: may i enter (11)
+5000: has a lamport of 11, it received: may i enter (12)
+5000: Got reply from id: 5002... yes, 13
+5002: Got reply from id: 5000... yes, 13
+5000: Accessed the Critical section. Lamport: 13
+5002: Accessed the Critical section. Lamport: 13
