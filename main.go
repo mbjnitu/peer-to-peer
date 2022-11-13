@@ -74,20 +74,19 @@ type peer struct {
 }
 
 func (p *peer) Ping(ctx context.Context, req *ping.Request) (*ping.Reply, error) {
-	id := req.Id
-	p.amountOfPings[id] += 1
+	message := "hello"
 
-	rep := &ping.Reply{Amount: p.amountOfPings[id]}
+	rep := &ping.Reply{Message: message}
 	return rep, nil
 }
 
 func (p *peer) sendPingToAll() {
-	request := &ping.Request{Id: p.id}
+	request := &ping.Request{Message: "hello"}
 	for id, client := range p.clients {
 		reply, err := client.Ping(p.ctx, request)
 		if err != nil {
 			fmt.Println("something went wrong")
 		}
-		fmt.Printf("Got reply from id %v: %v\n", id, reply.Amount)
+		fmt.Printf("Got reply from id %v: %v\n", id, reply.Message)
 	}
 }
