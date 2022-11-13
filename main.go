@@ -77,9 +77,11 @@ func (p *peer) Ping(ctx context.Context, req *ping.Request) (*ping.Reply, error)
 	message := req.Message
 	recievedLamport := req.Lamport
 
-	p.lamport = recievedLamport + 1
+	p.lamport = ping.SyncLamport(p.lamport, recievedLamport)
+	p.lamport = ping.IncrementLamport(p.lamport) //Receiving a message will increase the Lamport time
+
 	rep := &ping.Reply{Message: message, Lamport: p.lamport}
-	p.lamport += 1
+	p.lamport = ping.IncrementLamport(p.lamport) //Sending a message will increase the Lamport time
 
 	return rep, nil
 }

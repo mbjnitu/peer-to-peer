@@ -1,10 +1,10 @@
 package ping
 
-func IncrementLamport(lamport int) int {
+func IncrementLamport(lamport int32) int32 {
 	return lamport + 1
 }
 
-func SyncLamport(curLamport int, newLamport int) int {
+func SyncLamport(curLamport int32, newLamport int32) int32 {
 	if curLamport < newLamport {
 		curLamport = newLamport
 	}
