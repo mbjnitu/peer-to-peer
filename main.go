@@ -77,19 +77,25 @@ func (p *peer) Ping(ctx context.Context, req *ping.Request) (*ping.Reply, error)
 	message := req.Message
 	recievedLamport := req.Lamport
 
+	fmt.Printf("I: %v, has a lamport of %v, i received: %v\n", p.id, p.lamport, recievedLamport)
+
 	p.lamport = ping.SyncLamport(p.lamport, recievedLamport)
 	p.lamport = ping.IncrementLamport(p.lamport) //Receiving a message will increase the Lamport time
 
 	rep := &ping.Reply{Message: message, Lamport: p.lamport}
-	p.lamport = ping.IncrementLamport(p.lamport) //Sending a message will increase the Lamport time
 
 	return rep, nil
 }
 
 func (p *peer) sendPingToAll() {
-	request := &ping.Request{Message: "hello", Lamport: p.lamport}
 	for id, client := range p.clients {
+		p.lamport = ping.IncrementLamport(p.lamport) //Sending a message will increase the Lamport time
+		request := &ping.Request{Message: "hello", Lamport: p.lamport}
+		fmt.Printf("I %v, send a message with lamport: %v\n", p.id, p.lamport)
+
 		reply, err := client.Ping(p.ctx, request)
+		p.lamport = ping.SyncLamport(p.lamport, reply.Lamport) //Receiving a response, that might have a higher Lamport, therefor lets sync.
+
 		if err != nil {
 			fmt.Println("something went wrong")
 		}
