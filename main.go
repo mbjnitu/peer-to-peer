@@ -21,10 +21,10 @@ func main() {
 	defer cancel()
 
 	p := &peer{
-		id:            ownPort,
-		amountOfPings: make(map[int32]int32),
-		clients:       make(map[int32]ping.PingClient),
-		ctx:           ctx,
+		id:      ownPort,
+		lamport: 0,
+		clients: make(map[int32]ping.PingClient),
+		ctx:     ctx,
 	}
 
 	// Create listener tcp on port ownPort
@@ -67,26 +67,30 @@ func main() {
 
 type peer struct {
 	ping.UnimplementedPingServer
-	id            int32
-	amountOfPings map[int32]int32
-	clients       map[int32]ping.PingClient
-	ctx           context.Context
+	id      int32
+	lamport int32
+	clients map[int32]ping.PingClient
+	ctx     context.Context
 }
 
 func (p *peer) Ping(ctx context.Context, req *ping.Request) (*ping.Reply, error) {
-	message := "hello"
+	message := req.Message
+	recievedLamport := req.Lamport
 
-	rep := &ping.Reply{Message: message}
+	p.lamport = recievedLamport + 1
+
+	rep := &ping.Reply{Message: message, Lamport: p.lamport}
 	return rep, nil
 }
 
 func (p *peer) sendPingToAll() {
-	request := &ping.Request{Message: "hello"}
+	request := &ping.Request{Message: "hello", Lamport: p.lamport}
 	for id, client := range p.clients {
 		reply, err := client.Ping(p.ctx, request)
 		if err != nil {
 			fmt.Println("something went wrong")
 		}
-		fmt.Printf("Got reply from id %v: %v\n", id, reply.Message)
+
+		fmt.Printf("Got reply from id: %v... %v, %v\n", id, reply.Message, reply.Lamport)
 	}
 }
