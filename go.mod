@@ -1,4 +1,4 @@
-module github.com/NaddiNadja/peer-to-peer
+module github.com/mbjnitu/peer-to-peer
 
 go 1.17
 
