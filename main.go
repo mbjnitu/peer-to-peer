@@ -78,8 +78,9 @@ func (p *peer) Ping(ctx context.Context, req *ping.Request) (*ping.Reply, error)
 	recievedLamport := req.Lamport
 
 	p.lamport = recievedLamport + 1
-
 	rep := &ping.Reply{Message: message, Lamport: p.lamport}
+	p.lamport += 1
+
 	return rep, nil
 }
 
