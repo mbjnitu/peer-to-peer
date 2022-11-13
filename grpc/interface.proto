@@ -11,9 +11,11 @@ service Ping {
 message Request {
     string message = 1;
     int32 lamport = 2;
+    int32 id = 3;
 }
 
 message Reply {
     string message = 1;
     int32 lamport = 2;
+    int32 id = 3;
 }

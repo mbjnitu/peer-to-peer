@@ -1,2 +1,0 @@
-5000: Accessed the Critical section. Lamport: 13
-5002: Accessed the Critical section. Lamport: 13

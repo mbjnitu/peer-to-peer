@@ -93,7 +93,7 @@ type peer struct {
 func (p *peer) Ping(ctx context.Context, req *ping.Request) (*ping.Reply, error) {
 	message := req.Message
 	recievedLamport := req.Lamport
-	var recievedId int32 = 0
+	recievedId := req.Id
 	var response string = "yes"
 
 	fmt.Printf("%v: has a lamport of %v, it received: %v (%v)\n", p.id, p.lamport, message, recievedLamport)
@@ -101,6 +101,7 @@ func (p *peer) Ping(ctx context.Context, req *ping.Request) (*ping.Reply, error)
 
 	if message == "may i enter" {
 		// Do i want to enter aswell?
+		rand.NewSource(time.Now().UnixNano())
 		random := rand.Intn(100)
 		rand.NewSource(time.Now().UnixNano())
 		if p.state == "in" { //Im aleready using the critical section, like wtf are you thinking?..
@@ -130,7 +131,7 @@ func (p *peer) sendPingToAll(message string) {
 	amountOfYes := 0
 	for id, client := range p.clients {
 		p.lamport = ping.IncrementLamport(p.lamport) //Sending a message will increase the Lamport time
-		request := &ping.Request{Message: message, Lamport: p.lamport}
+		request := &ping.Request{Message: message, Lamport: p.lamport, Id: p.id}
 		fmt.Printf("%v: send message '%v' with lamport: %v\n", p.id, message, p.lamport)
 		logFile.WriteString(fmt.Sprintf("%v: send message '%v' with lamport: %v\n", p.id, message, p.lamport))
 
