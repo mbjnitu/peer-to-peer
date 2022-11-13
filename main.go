@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-var f *os.File
+var logFile, CRITICAL_FILE *os.File
 var fileerr error
 
 func main() {
@@ -31,9 +31,13 @@ func main() {
 	}
 
 	//Create log.txt if not there
-	f, fileerr = os.OpenFile("Log.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	logFile, fileerr = os.OpenFile("Log.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if fileerr != nil {
-		fmt.Println("Error creating log.txt")
+		fmt.Println("Error opening log.txt")
+	}
+	CRITICAL_FILE, fileerr = os.OpenFile("CRITICAL_SECTION.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	if fileerr != nil {
+		fmt.Println("Error opening log.txt")
 	}
 
 	// Create listener tcp on port ownPort
@@ -87,7 +91,7 @@ func (p *peer) Ping(ctx context.Context, req *ping.Request) (*ping.Reply, error)
 	recievedLamport := req.Lamport
 
 	fmt.Printf("%v: has a lamport of %v, it received: %v\n", p.id, p.lamport, recievedLamport)
-	f.WriteString(fmt.Sprintf("%v: has a lamport of %v, it received: %v\n", p.id, p.lamport, recievedLamport))
+	logFile.WriteString(fmt.Sprintf("%v: has a lamport of %v, it received: %v\n", p.id, p.lamport, recievedLamport))
 	p.lamport = ping.SyncLamport(p.lamport, recievedLamport)
 	p.lamport = ping.IncrementLamport(p.lamport) //Receiving a message will increase the Lamport time
 
@@ -101,7 +105,7 @@ func (p *peer) sendPingToAll() {
 		p.lamport = ping.IncrementLamport(p.lamport) //Sending a message will increase the Lamport time
 		request := &ping.Request{Message: "hello", Lamport: p.lamport}
 		fmt.Printf("%v: send a message with lamport: %v\n", p.id, p.lamport)
-		f.WriteString(fmt.Sprintf("%v: send a message with lamport: %v\n", p.id, p.lamport))
+		logFile.WriteString(fmt.Sprintf("%v: send a message with lamport: %v\n", p.id, p.lamport))
 
 		reply, err := client.Ping(p.ctx, request)
 		p.lamport = ping.SyncLamport(p.lamport, reply.Lamport) //Receiving a response, that might have a higher Lamport, therefor lets sync.
@@ -111,6 +115,6 @@ func (p *peer) sendPingToAll() {
 		}
 
 		fmt.Printf("%v: Got reply from id: %v... %v, %v\n", p.id, id, reply.Message, reply.Lamport)
-		f.WriteString(fmt.Sprintf("%v: Got reply from id: %v... %v, %v\n", p.id, id, reply.Message, reply.Lamport))
+		logFile.WriteString(fmt.Sprintf("%v: Got reply from id: %v... %v, %v\n", p.id, id, reply.Message, reply.Lamport))
 	}
 }
