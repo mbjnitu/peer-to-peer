@@ -94,12 +94,13 @@ func (p *peer) Ping(ctx context.Context, req *ping.Request) (*ping.Reply, error)
 	message := req.Message
 	recievedLamport := req.Lamport
 	recievedId := req.Id
-	var response string = "yes"
+	var response string = "What a weird question!"
 
 	fmt.Printf("%v: has a lamport of %v, it received: %v (%v)\n", p.id, p.lamport, message, recievedLamport)
 	logFile.WriteString(fmt.Sprintf("%v: has a lamport of %v, it received: %v (%v)\n", p.id, p.lamport, message, recievedLamport))
 
 	if message == "may i enter" {
+		response = "yes"
 		// Do i want to enter aswell?
 		rand.NewSource(time.Now().UnixNano())
 		random := rand.Intn(100)
